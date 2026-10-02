@@ -1,4 +1,4 @@
-# Language Agent 🇳🇴
+﻿# Language Agent 🇳🇴
 
 A personal language-learning agent that sends a daily Norwegian (Bokmål) lesson via Telegram,
 grades answers with Claude, logs mistakes and schedules reviews with adaptive spaced repetition.
@@ -10,7 +10,7 @@ See [CLAUDE.md](CLAUDE.md) for the full project brief.
 Phase 1 (MVP, Norwegian only) — in progress.
 
 - [x] 1. Project skeleton
-- [ ] 2. Database schema + seed items
+- [x] 2. Database schema + seed items
 - [ ] 3. SRS logic + tests
 - [ ] 4. LLM wrapper + lesson prompt + pydantic models
 - [ ] 5. Lesson builder + terminal dry-run
