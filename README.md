@@ -13,7 +13,7 @@ Phase 1 (MVP, Norwegian only) — in progress.
 - [x] 2. Database schema + seed items
 - [x] 3. SRS logic + tests
 - [x] 4. LLM wrapper + lesson prompt + pydantic models
-- [ ] 5. Lesson builder + terminal dry-run
+- [x] 5. Lesson builder + terminal dry-run
 - [ ] 6. Telegram bot + grader
 - [ ] 7. Daily scheduler
 - [ ] 8. End-to-end test
@@ -27,6 +27,14 @@ python -m venv .venv
 .venv\Scripts\activate        # Windows  (macOS/Linux: source .venv/bin/activate)
 pip install -r requirements.txt
 cp .env.example .env          # then fill in the secrets
+```
+
+## Terminal dry-run
+
+```bash
+python -m src.lesson --plan-only        # show what today's lesson will contain (no API key needed)
+python -m src.lesson --mode busy        # generate a lesson with Claude, DB untouched
+python -m src.lesson --save             # generate and store it (schedules new items for tomorrow)
 ```
 
 ## Tests

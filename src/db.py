@@ -219,6 +219,14 @@ def get_item(conn: sqlite3.Connection, item_id: int) -> Item | None:
     return _row_to_item(row) if row else None
 
 
+def get_item_by_target(conn: sqlite3.Connection, language: str, target: str) -> Item | None:
+    """Fetch one item by its (unique) target text."""
+    row = conn.execute(
+        "SELECT * FROM items WHERE language = ? AND target = ?", (language, target)
+    ).fetchone()
+    return _row_to_item(row) if row else None
+
+
 def get_due_items(
     conn: sqlite3.Connection, language: str, today: date, limit: int = 10
 ) -> list[Item]:
@@ -451,6 +459,17 @@ def get_latest_lesson(
         """,
         (language, lesson_date.isoformat()),
     ).fetchone()
+
+
+def get_recent_lesson_contents(
+    conn: sqlite3.Connection, language: str, limit: int = 5
+) -> list[str]:
+    """content_json of the most recent lessons, newest first."""
+    rows = conn.execute(
+        "SELECT content_json FROM lessons WHERE language = ? ORDER BY id DESC LIMIT ?",
+        (language, limit),
+    ).fetchall()
+    return [r["content_json"] for r in rows]
 
 
 def set_lesson_score(conn: sqlite3.Connection, lesson_id: int, score: float) -> None:
