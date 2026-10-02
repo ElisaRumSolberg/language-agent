@@ -12,7 +12,7 @@ Phase 1 (MVP, Norwegian only) — in progress.
 - [x] 1. Project skeleton
 - [x] 2. Database schema + seed items
 - [x] 3. SRS logic + tests
-- [ ] 4. LLM wrapper + lesson prompt + pydantic models
+- [x] 4. LLM wrapper + lesson prompt + pydantic models
 - [ ] 5. Lesson builder + terminal dry-run
 - [ ] 6. Telegram bot + grader
 - [ ] 7. Daily scheduler
