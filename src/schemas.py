@@ -75,11 +75,21 @@ class LessonContent(BaseModel):
     exercises: list[Exercise]
 
 
+class ReviewSet(BaseModel):
+    """Exercises only, for the /review command."""
+
+    exercises: list[Exercise]
+
+
 class GradeResult(BaseModel):
     """Grader verdict for one answer."""
 
     item_id: int | None = None
-    correct: bool
+    correct: bool = Field(description="Whole answer acceptable (no significant error).")
+    item_used_correctly: bool | None = Field(
+        default=None,
+        description="Was the practised item itself understood/used correctly? Null if no item.",
+    )
     corrected: str = Field(description="Corrected version of the learner's answer (same as answer if correct).")
     category: MistakeCategory | None = Field(default=None, description="Error category; null if correct.")
     topic: str | None = Field(default=None, description="Short error topic, e.g. 'V2', 'fordi/derfor'; null if correct.")

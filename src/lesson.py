@@ -22,7 +22,7 @@ from datetime import date
 from src import db, srs
 from src.db import Item, Mistake
 from src.llm import LLM, LLMError, load_prompt
-from src.schemas import LessonContent, NewItem
+from src.schemas import Exercise, LessonContent, NewItem, ReviewSet
 
 log = logging.getLogger(__name__)
 
@@ -87,10 +87,11 @@ class GeneratedLesson:
     ones are still NewItem objects (same display fields, no id).
     """
 
-    plan: LessonPlan
+    plan: LessonPlan | None  # None when loaded back from the DB
     content: LessonContent
     new_items: list[Item | NewItem] = field(default_factory=list)
     lesson_id: int | None = None
+    mode: str = "full"
 
 
 # ---------------------------------------------------------------- 1. plan
@@ -261,17 +262,79 @@ def generate_lesson(
     _check_coverage(plan, content)
 
     if not save:
-        return GeneratedLesson(plan=plan, content=content,
+        return GeneratedLesson(plan=plan, content=content, mode=mode,
                                new_items=[*plan.pool_new, *content.new_items])
 
     new_items = plan.pool_new + _store_new_items(conn, content, today)
     _attach_item_ids(content, new_items)
     _introduce(conn, new_items, today)
+    stored = {**content.model_dump(mode="json"), "new_item_ids": [i.id for i in new_items]}
     lesson_id = db.save_lesson(
         conn, lesson_date=today, language=LANGUAGE, mode=mode,
-        topic=content.topic, content_json=content.model_dump_json(),
+        topic=content.topic, content_json=json.dumps(stored, ensure_ascii=False),
     )
-    return GeneratedLesson(plan=plan, content=content, new_items=new_items, lesson_id=lesson_id)
+    return GeneratedLesson(plan=plan, content=content, new_items=new_items,
+                           lesson_id=lesson_id, mode=mode)
+
+
+def load_today_lesson(conn: sqlite3.Connection, today: date) -> GeneratedLesson | None:
+    """The lesson already generated today, if any."""
+    row = db.get_latest_lesson(conn, LANGUAGE, today)
+    if row is None:
+        return None
+    data = json.loads(row["content_json"])
+    items = [db.get_item(conn, i) for i in data.get("new_item_ids", [])]
+    return GeneratedLesson(
+        plan=None,
+        content=LessonContent.model_validate(data),
+        new_items=[i for i in items if i is not None],
+        lesson_id=row["id"],
+        mode=row["mode"],
+    )
+
+
+def get_or_create_today_lesson(
+    conn: sqlite3.Connection,
+    llm: LLM,
+    *,
+    model: str,
+    today: date,
+    mode: str = "full",
+    default_level: str = "A2",
+) -> GeneratedLesson:
+    """Reuse today's lesson (whatever its mode) or generate and store a new one.
+
+    Reusing matters: generating twice would introduce a second batch of new items.
+    """
+    existing = load_today_lesson(conn, today)
+    if existing is not None:
+        return existing
+    return generate_lesson(conn, llm, model=model, today=today, mode=mode,
+                           default_level=default_level, save=True)
+
+
+# ---------------------------------------------------------------- /review
+
+
+def generate_review_set(
+    conn: sqlite3.Connection, llm: LLM, *, model: str, today: date
+) -> list[Exercise]:
+    """Exercises for due items only (no new items, no grammar). Empty if nothing is due."""
+    due = db.get_due_items(conn, LANGUAGE, today, limit=MODES["full"].max_reviews)
+    if not due:
+        return []
+    mistakes = [m for m in db.get_open_mistakes(conn, LANGUAGE) if m.recurring]
+    user = load_prompt(
+        "review_user",
+        review_items="\n".join(
+            f"- {_item_line(i)} | stage {i.stage} → {srs.question_type_for_stage(i.stage)}"
+            for i in due
+        ),
+        mistakes="\n".join(_mistake_line(m) for m in mistakes) or "(none)",
+    )
+    result = llm.generate(model=model, system=load_prompt("lesson_system"), user=user,
+                          schema=ReviewSet, effort="low", purpose="review")
+    return result.exercises
 
 
 # ---------------------------------------------------------------- dry-run CLI

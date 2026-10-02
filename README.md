@@ -14,8 +14,8 @@ Phase 1 (MVP, Norwegian only) — in progress.
 - [x] 3. SRS logic + tests
 - [x] 4. LLM wrapper + lesson prompt + pydantic models
 - [x] 5. Lesson builder + terminal dry-run
-- [ ] 6. Telegram bot + grader
-- [ ] 7. Daily scheduler
+- [x] 6. Telegram bot + grader
+- [x] 7. Daily scheduler
 - [ ] 8. End-to-end test
 
 ## Setup

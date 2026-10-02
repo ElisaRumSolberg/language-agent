@@ -122,10 +122,14 @@ class Mistake:
 
 
 def connect(db_path: Path | str) -> sqlite3.Connection:
-    """Open a connection with row access by column name and FKs enabled."""
+    """Open a connection with row access by column name and FKs enabled.
+
+    check_same_thread=False: the bot runs blocking work (LLM + DB) in a worker
+    thread via asyncio.to_thread; access is serialized by a lock in bot.py.
+    """
     if str(db_path) != ":memory:":
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
@@ -394,7 +398,7 @@ def record_correct_use(
 
     Returns the updated mistake, or None if there is no open mistake for the topic.
     """
-    conn.execute(
+    cur = conn.execute(
         """
         UPDATE mistakes
         SET correct_streak = correct_streak + 1,
@@ -405,6 +409,8 @@ def record_correct_use(
         (RESOLVE_STREAK, today.isoformat(), language, topic),
     )
     conn.commit()
+    if cur.rowcount == 0:
+        return None
     row = conn.execute(
         "SELECT * FROM mistakes WHERE language = ? AND topic = ?", (language, topic)
     ).fetchone()
