@@ -1,5 +1,7 @@
 # Language Agent 🇳🇴
 
+[![Tests](https://github.com/ElisaRumSolberg/language-agent/actions/workflows/test.yml/badge.svg)](https://github.com/ElisaRumSolberg/language-agent/actions/workflows/test.yml)
+
 A personal language-learning agent that sends a daily Norwegian (Bokmål) lesson via Telegram,
 grades answers with Claude, logs mistakes and schedules reviews with adaptive spaced repetition.
 
